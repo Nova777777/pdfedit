@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>PDF 页面整理</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">PDF</span>
+    <div class="brand-text">
+      <h1>页面整理</h1>
+      <p>本地处理 · 文件不上传</p>
+    </div>
+  </div>
+
+  <div class="tb-center">
+    <button class="btn" id="btnOpen">＋ 添加 PDF</button>
+    <span class="sep"></span>
+    <button class="btn icon" id="btnUndo" title="撤销 (Ctrl+Z)">↶</button>
+    <button class="btn icon" id="btnRedo" title="重做 (Ctrl+Y)">↷</button>
+    <span class="sep"></span>
+    <button class="btn icon" id="btnZoomOut" title="缩小缩略图">－</button>
+    <button class="btn icon" id="btnZoomIn" title="放大缩略图">＋</button>
+  </div>
+
+  <div class="tb-right">
+    <button class="btn" id="btnExtract" title="只导出选中的页面">导出选中页</button>
+    <button class="btn primary" id="btnExport">导出 PDF</button>
+  </div>
+</header>
+
+<div class="workspace">
+  <aside class="sidebar" id="sidebar">
+    <section class="card">
+      <header class="card-head">
+        <h2>源文件</h2>
+        <span class="pill" id="srcCount">0</span>
+      </header>
+      <ul class="src-list" id="srcList"></ul>
+      <p class="hint" id="srcEmpty">还没有文件。点击「添加 PDF」，或把 PDF 文件直接拖到右侧。</p>
+    </section>
+
+    <section class="card">
+      <header class="card-head"><h2>页面操作</h2></header>
+      <div class="ops">
+        <button class="btn sm" data-op="rotL" title="逆时针 90°">↺ 左转</button>
+        <button class="btn sm" data-op="rotR" title="顺时针 90°">↻ 右转</button>
+        <button class="btn sm" data-op="dup" title="在下方复制一份">复制</button>
+        <button class="btn sm danger" data-op="del" title="Delete">删除</button>
+        <button class="btn sm" data-op="blank" title="在选中页之后插入空白页">插入空白页</button>
+        <button class="btn sm" data-op="keep" title="删除未选中的页面">仅保留选中</button>
+      </div>
+    </section>
+
+    <section class="card collapsible" data-card="size">
+      <header class="card-head"><h2>统一页面尺寸</h2><span class="chev">▾</span></header>
+      <div class="card-body">
+        <label class="row"><span>纸张</span>
+          <select id="sizePreset">
+            <option value="keep">保持原样</option>
+            <option value="A4">A4 210×297</option>
+            <option value="A4L">A4 横向 297×210</option>
+            <option value="A3">A3 297×420</option>
+            <option value="A3L">A3 横向 420×297</option>
+            <option value="A5">A5 148×210</option>
+            <option value="letter">Letter 216×279</option>
+            <option value="custom">自定义…</option>
+          </select>
+        </label>
+        <div class="row" id="sizeCustomRow" hidden>
+          <span>尺寸</span>
+          <span class="dims">
+            <input type="number" id="sizeW" value="210" min="10" max="2000" step="1">
+            <em>×</em>
+            <input type="number" id="sizeH" value="297" min="10" max="2000" step="1">
+            <em>mm</em>
+          </span>
+        </div>
+        <label class="row"><span>内容</span>
+          <select id="sizeMode">
+            <option value="fit">等比适应</option>
+            <option value="stretch">拉伸填满</option>
+            <option value="actual">原始大小</option>
+          </select>
+        </label>
+        <label class="row"><span>对齐</span>
+          <select id="sizeAlign">
+            <option value="center">居中</option>
+            <option value="top">靠上</option>
+            <option value="bottom">靠下</option>
+            <option value="left">靠左</option>
+            <option value="right">靠右</option>
+            <option value="tl">左上</option>
+            <option value="tr">右上</option>
+            <option value="bl">左下</option>
+            <option value="br">右下</option>
+          </select>
+        </label>
+        <div class="row btns">
+          <button class="btn sm primary" id="btnApplySize">应用到选中</button>
+          <button class="btn sm" id="btnClearSize">还原</button>
+        </div>
+        <p class="hint">没有选中页面时，应用到全部页面。</p>
+      </div>
+    </section>
+
+    <section class="card collapsible collapsed" data-card="crop">
+      <header class="card-head"><h2>裁剪 / 留白</h2><span class="chev">▾</span></header>
+      <div class="card-body">
+        <p class="hint">按页面显示方向，从四边裁掉指定距离。填负数即向外加白边。</p>
+        <div class="crop-grid">
+          <label>上<input type="number" id="cropTop" value="0" step="1"></label>
+          <label>左<input type="number" id="cropLeft" value="0" step="1"></label>
+          <label>右<input type="number" id="cropRight" value="0" step="1"></label>
+          <label>下<input type="number" id="cropBottom" value="0" step="1"></label>
+        </div>
+        <div class="quick-row">
+          <button class="chip" data-crop="0">清零</button>
+          <button class="chip" data-crop="5">5mm</button>
+          <button class="chip" data-crop="10">10mm</button>
+          <button class="chip" data-crop="15">15mm</button>
+        </div>
+        <div class="row btns">
+          <button class="btn sm primary" id="btnApplyCrop">应用到选中</button>
+          <button class="btn sm" id="btnClearCrop">还原</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card collapsible collapsed" data-card="help">
+      <header class="card-head"><h2>快捷键</h2><span class="chev">▾</span></header>
+      <div class="card-body">
+        <ul class="keys">
+          <li><kbd>Ctrl</kbd>+<kbd>A</kbd> 全选</li>
+          <li><kbd>Shift</kbd> / <kbd>Ctrl</kbd> 点击 连选</li>
+          <li><kbd>Delete</kbd> 删除选中页</li>
+          <li><kbd>Ctrl</kbd>+<kbd>D</kbd> 复制选中页</li>
+          <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd> 撤销 / 重做</li>
+          <li><kbd>[</kbd> / <kbd>]</kbd> 逐页旋转</li>
+        </ul>
+      </div>
+    </section>
+  </aside>
+
+  <main class="main" id="main">
+    <div class="welcome" id="welcome">
+      <div class="welcome-inner">
+        <div class="welcome-icon">PDF</div>
+        <h2>把 PDF 拖进来开始整理</h2>
+        <p>支持多个 PDF 合并整理 · 排序 · 删页 · 旋转 · 裁剪 · 统一尺寸 · 拼版 · 拆分导出</p>
+        <button class="btn primary lg" id="btnOpen2">选择 PDF 文件</button>
+        <p class="fine">所有处理都在本机浏览器完成，文件不会上传到任何服务器。</p>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </main>
+</div>
+
+<footer class="statusbar">
+  <span id="stPages">0 页</span>
+  <span class="dot">·</span>
+  <span id="stSel">未选中</span>
+  <span class="dot">·</span>
+  <span id="stSize" class="muted"></span>
+  <span class="grow"></span>
+  <span class="muted" id="stTip">拖动缩略图调整顺序 · Ctrl+A 全选 · Delete 删除</span>
+</footer>
+
+<!-- 导出对话框 -->
+<div class="overlay" id="exportOverlay" hidden>
+  <div class="dialog" role="dialog" aria-modal="true">
+    <header class="dialog-head">
+      <h2>导出 PDF</h2>
+      <button class="x" id="btnCloseExport" title="关闭">✕</button>
+    </header>
+    <div class="dialog-body">
+      <label class="row"><span>文件名</span><input type="text" id="expName" value="整理结果"></label>
+      <label class="row"><span>范围</span>
+        <select id="expScope">
+          <option value="all">全部页面</option>
+          <option value="selected">仅选中的页面</option>
+        </select>
+      </label>
+
+      <fieldset>
+        <legend>拼版（多页合一，打印用）</legend>
+        <div class="row">
+          <span>每张页数</span>
+          <select id="expNup">
+            <option value="1">不拼版</option>
+            <option value="2">2 页</option>
+            <option value="4">4 页</option>
+            <option value="6">6 页</option>
+            <option value="9">9 页</option>
+          </select>
+        </div>
+        <div id="nupOpts" hidden>
+          <label class="row"><span>纸张</span>
+            <select id="expPaper">
+              <option value="A4">A4</option>
+              <option value="A4L">A4 横向</option>
+              <option value="A3">A3</option>
+              <option value="A3L">A3 横向</option>
+              <option value="auto">跟随第一页</option>
+            </select>
+          </label>
+          <label class="row"><span>页间距</span>
+            <span class="dims"><input type="number" id="expGap" value="5" min="0" max="50" step="1"><em>mm</em></span>
+          </label>
+          <label class="row check"><input type="checkbox" id="expBorder"><span>每页画细边框</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>拆分导出</legend>
+        <label class="row"><span>方式</span>
+          <select id="expSplit">
+            <option value="none">不拆分（单个文件）</option>
+            <option value="each">每 N 页一个文件</option>
+            <option value="range">按页码范围分段</option>
+          </select>
+        </label>
+        <label class="row" id="splitEachRow" hidden><span>每份页数</span>
+          <input type="number" id="expEachN" value="10" min="1" step="1">
+        </label>
+        <label class="row" id="splitRangeRow" hidden><span>分段</span>
+          <input type="text" id="expRanges" placeholder="例如 1-3,4-6,7-">
+        </label>
+        <p class="hint" id="splitHint" hidden>多份文件会打包成一个 ZIP 下载。</p>
+      </fieldset>
+    </div>
+    <footer class="dialog-foot">
+      <span class="info" id="expInfo"></span>
+      <span class="grow"></span>
+      <button class="btn" id="btnCancelExport">取消</button>
+      <button class="btn primary" id="btnDoExport">开始导出</button>
+    </footer>
+  </div>
+</div>
+
+<!-- 进度 -->
+<div class="overlay" id="busyOverlay" hidden>
+  <div class="busy">
+    <div class="spinner"></div>
+    <p id="busyText">正在处理…</p>
+    <div class="bar"><i id="busyBar"></i></div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
+<div class="toasts" id="toasts"></div>
+<div class="drop-hint" id="dropHint"><span>松开鼠标，添加 PDF</span></div>
+
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
